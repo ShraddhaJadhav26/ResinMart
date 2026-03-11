@@ -2,16 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import toast from "react-hot-toast";
 function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-const { login } = useContext(AuthContext);
+  const [success, setSuccess] = useState(false); // Added to track success state
+  const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     try {
-      const response = await fetch("http://localhost:8080/users/register", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -26,20 +28,21 @@ const { login } = useContext(AuthContext);
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message);
+        // 🔥 Replaced alert with error toast
+        toast.error(data.message || "Registration failed");
         return;
       }
-localStorage.setItem("token", data.token);
 
-// 🔥 update React context just like login page
-login(data.role);
+      // setSuccess(true); // Switch to success view (Keep this as per your logic)
+      setSuccess(true);
 
-alert("Registration successful!");
-navigate("/dashboard");
+      // 🔥 Replaced alert with success toast
+      toast.success(data.message || "Registration successful! Please verify your email.");
 
     } catch (error) {
       console.error(error);
-      alert("Something went wrong");
+      // 🔥 Replaced alert with error toast
+      toast.error("Something went wrong. Please try again later.");
     }
   };
 
@@ -81,43 +84,61 @@ navigate("/dashboard");
           Register
         </h2>
 
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={inputStyle}
-        />
+        {/* If registration is successful, show a message instead of the form */}
+        {success ? (
+          <div style={{ textAlign: "center" }}>
+            <p style={{ color: "green", fontWeight: "bold" }}>
+              Registration successful!
+            </p>
+            <p>Please check your email to verify your account.</p>
+            <button 
+              onClick={() => navigate("/login")} 
+              style={{ ...buttonStyle, backgroundColor: "#6c5ce7", marginTop: "10px" }}
+            >
+              Go to Login
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={inputStyle}
+            />
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={inputStyle}
-        />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
-        />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+            />
 
-        <button onClick={handleRegister} style={buttonStyle}>
-          Register
-        </button>
+            <button onClick={handleRegister} style={buttonStyle}>
+              Register
+            </button>
 
-        <p style={{ textAlign: "center", marginTop: "15px" }}>
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            style={{ color: "blue", cursor: "pointer" }}
-          >
-            Login
-          </span>
-        </p>
+            <p style={{ textAlign: "center", marginTop: "15px" }}>
+              Already have an account?{" "}
+              <span
+                onClick={() => navigate("/login")}
+                style={{ color: "blue", cursor: "pointer" }}
+              >
+                Login
+              </span>
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

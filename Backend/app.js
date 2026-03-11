@@ -1,44 +1,54 @@
-const express= require ("express");
+require('dotenv').config(); // 🔥 MUST BE FIRST
+const express = require("express");
 const cors = require("cors");
-const app=express();
-app.use(cors());
+const mongoose = require("mongoose");
+const path = require("path");
+
+const app = express();
+
+// 🔥 SECURE CORS: Moved up and cleaned
+app.use(cors({
+  origin: process.env.FRONTEND_URL, 
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"], // Added PATCH for AdminOrders
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const mongoose=require("mongoose");
 app.use("/uploads", express.static("uploads"));
 
- const Mongo_Url="mongodb://127.0.0.1:27017/resinMArt";
- const Product = require("./Models/Product");
-const productroute=require("./routes/product.js");
+// Routes
+const productroute = require("./routes/product.js");
 const orderRoutes = require("./routes/order");
 const userRoutes = require("./routes/user");
+const cartRoutes = require("./routes/cart");
+const reviewRoutes = require("./routes/review");
+const paymentRoutes = require("./routes/payment");
+
 app.use("/users", userRoutes);
 app.use("/orders", orderRoutes);
+app.use("/carts", cartRoutes);
+app.use("/payment", paymentRoutes);
+app.use("/reviews", reviewRoutes);
+app.use("/products", productroute);
 
+// 🔥 DATABASE CONNECTION: Using .env variable
+const Mongo_Url = process.env.MONGODB_URI; 
 
-
-
-
-main().then(()=>{
-    console.log("connected to DB");
-})
-.catch((err)=>{
- console.log(err);
-})
-
-
- async function main(){
-     await mongoose.connect(Mongo_Url);
+async function main() {
+  await mongoose.connect(Mongo_Url);
 }
- 
 
-app.get("/",(req,res)=>{
-    res.send(" Hii ,I am root");
-})
+main()
+  .then(() => console.log("Connected to MongoDB Atlas! ✅"))
+  .catch((err) => console.log("DB Connection Error: ", err));
 
-app.listen(8080,()=>{
-    console.log("server is listening on port 8080");
+app.get("/", (req, res) => {
+  res.send("ResinMart API is running...");
 });
-app.use("/products",productroute);
- 
+
+// 🔥 PORT: Using .env variable
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
+});

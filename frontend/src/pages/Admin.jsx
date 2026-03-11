@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { Navigate, useNavigate } from "react-router-dom";
-
+import toast from 'react-hot-toast';
 function Admin() {
   const { role } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -10,9 +10,12 @@ function Admin() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState(null);
-if(!role){
-  return<p>Loading...</p>;
-}
+  // NEW: Category State
+  const [category, setCategory] = useState("Keychain"); 
+
+  if (!role) {
+    return <p>Loading...</p>;
+  }
   if (role !== "admin") {
     return <Navigate to="/dashboard" />;
   }
@@ -25,122 +28,99 @@ if(!role){
     formData.append("description", description);
     formData.append("price", price);
     formData.append("image", image);
+    // NEW: Append category to FormData
+    formData.append("category", category);
 
     try {
-     const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
-const response = await fetch("http://localhost:8080/products", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${token}`
-  },
-  body: formData
-});
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/products`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message);
-        return;
-      }
+  // 🔥 Error Toast for backend validation (e.g., missing fields)
+  toast.error(data.message || "Failed to add product");
+  return;
+}
 
-      alert("Product added successfully!");
+// 🔥 Success Toast
+toast.success("Product added successfully!");
+navigate("/dashboard");
 
-      navigate("/dashboard");
-
-    } catch (error) {
-      console.error(error);
-      alert("Something went wrong");
-    }
+} catch (error) {
+  console.error(error);
+  // 🔥 Error Toast for network/server issues
+  toast.error("Something went wrong. Please try again.");
+}
   };
 
-  // return (
-    // <div style={{ textAlign: "center", marginTop: "50px" }}>
-    //   <h2>Admin Panel</h2>
-
-    //   <form onSubmit={handleSubmit}>
-    //     <input
-    //       type="text"
-    //       placeholder="Product Title"
-    //       value={title}
-    //       onChange={(e) => setTitle(e.target.value)}
-    //     />
-    //     <br /><br />
-
-    //     <textarea
-    //       placeholder="Product Description"
-    //       value={description}
-    //       onChange={(e) => setDescription(e.target.value)}
-    //     />
-    //     <br /><br />
-
-    //     <input
-    //       type="number"
-    //       placeholder="Price"
-    //       value={price}
-    //       onChange={(e) => setPrice(e.target.value)}
-    //     />
-    //     <br /><br />
-
-    //     <input
-    //       type="file"
-    //       onChange={(e) => setImage(e.target.files[0])}
-    //     />
-    //     <br /><br />
-
-    //     <button type="submit">Add Product</button>
-    //   </form>
-    // </div>
-  // );
   return (
-  <div style={styles.container}>
-    <div style={styles.card}>
-      <h2 style={styles.heading}>Admin Panel - Add Product</h2>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.heading}>Admin Panel - Add Product</h2>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <input
+            style={styles.input}
+            type="text"
+            placeholder="Product Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
 
-        <input
-          style={styles.input}
-          type="text"
-          placeholder="Product Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
+          <textarea
+            style={styles.textarea}
+            placeholder="Product Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
 
-        <textarea
-          style={styles.textarea}
-          placeholder="Product Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
+          <input
+            style={styles.input}
+            type="number"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
 
-        <input
-          style={styles.input}
-          type="number"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-        />
+          {/* NEW: Category Dropdown */}
+          <select 
+            style={styles.input} 
+            value={category} 
+            onChange={(e) => setCategory(e.target.value)}
+            required
+          >
+            <option value="Keychain">Keychain</option>
+            <option value="Frame">Frame</option>
+            <option value="Jewelry">Jewelry</option>
+          </select>
 
-        <input
-          style={styles.input}
-          type="file"
-          onChange={(e) => setImage(e.target.files[0])}
-          required
-        />
+          <input
+            style={styles.input}
+            type="file"
+            onChange={(e) => setImage(e.target.files[0])}
+            required
+          />
 
-        <button style={styles.button} type="submit">
-          Add Product
-        </button>
-
-      </form>
+          <button style={styles.button} type="submit">
+            Add Product
+          </button>
+        </form>
+      </div>
     </div>
-  </div>
-);
+  );
 }
+
 const styles = {
   container: {
     display: "flex",
@@ -184,4 +164,5 @@ const styles = {
     cursor: "pointer"
   }
 };
+
 export default Admin;

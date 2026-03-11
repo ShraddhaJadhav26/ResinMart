@@ -3,7 +3,6 @@ import { createContext, useState, useEffect } from "react";
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-    const [toast, setToast] = useState("");
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem("cart");
     return savedCart ? JSON.parse(savedCart) : [];
@@ -13,23 +12,39 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product) => {
-  const existing = cart.find(item => item._id === product._id);
+  const addToCart = async (product) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/carts/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ productId: product._id })
+      });
 
-  if (existing) {
-    setCart(cart.map(item =>
-      item._id === product._id
-        ? { ...item, quantity: item.quantity + 1 }
-        : item
-    ));
-  } else {
-    setCart([...cart, { ...product, quantity: 1 }]);
-  }
+      const data = await response.json();
 
-};
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
 
+      // Keep your existing state update logic
+      setCart([...cart, product]); 
+      console.log("Cart updated:", data);
+
+    } catch (error) {
+      console.error("Error adding to cart", error);
+    }
+  };
+
+  // --- ADDED THIS FEATURE ONLY ---
   const removeFromCart = (id) => {
-    setCart(cart.filter(item => item._id !== id));
+    // This simply filters the local list so the item vanishes from UI
+    const updatedCart = cart.filter(item => item._id !== id);
+    setCart(updatedCart);
   };
 
   const clearCart = () => {
@@ -37,7 +52,7 @@ export const CartProvider = ({ children }) => {
   };
 
   const totalPrice = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
+    (total, item) => total + (item.price || 0) * (item.quantity || 1),
     0
   );
 

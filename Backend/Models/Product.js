@@ -13,7 +13,12 @@ const productSchema=new mongoose.Schema({
         type:Number,
         required:true,
         default:0,
-    }
+    },
+    category: { 
+    type: String, 
+    enum: ["Keychain", "Frame", "Jewelry","other"], // Add your categories here
+    default: "other" 
+  }
 });
 
 

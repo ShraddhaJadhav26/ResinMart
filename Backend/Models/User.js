@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   default: "user"
 }
 ,
-isVerified: { type: Boolean, default: false },
+isVerified: { type: Boolean, default: true },
   verificationToken: { type: String }
 }, { timestamps: true });
 

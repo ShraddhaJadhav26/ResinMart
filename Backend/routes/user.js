@@ -4,7 +4,7 @@ const User = require("../Models/User.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto"); // Built-in Node tool
-const sendEmail = require("../utils/sendEmail");
+// const sendEmail = require("../utils/sendEmail");
 
 // Register User
 // Register User
@@ -34,7 +34,7 @@ router.post("/register", async (req, res) => {
       <a href="${url}">Verify Email</a>
     `;
     
-    await sendEmail(newUser.email, "Verify your ResinMart Account", emailTemplate);
+    //await sendEmail(newUser.email, "Verify your ResinMart Account", emailTemplate);
 
     // ONLY CHANGE: Removed token and role to prevent auto-login
     res.status(201).json({ 

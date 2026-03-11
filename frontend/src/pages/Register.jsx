@@ -11,21 +11,40 @@ function Register() {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Inside your register function:
-const handleRegister = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/users/register`, formData);
-    
-    if (response.data.success) {
-      // CHANGE THIS: Instead of showing "Check Email" popup
-      alert("Registration Successful! You can now log in."); 
-      navigate("/login"); // Move them to the login page immediately
+  const handleRegister = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 🔥 Replaced alert with error toast
+        toast.error(data.message || "Registration failed");
+        return;
+      }
+
+      // setSuccess(true); // Switch to success view (Keep this as per your logic)
+      setSuccess(true);
+
+      // 🔥 Replaced alert with success toast
+      toast.success(data.message || "Registration successful! Please verify your email.");
+
+    } catch (error) {
+      console.error(error);
+      // 🔥 Replaced alert with error toast
+      toast.error("Something went wrong. Please try again later.");
     }
-  } catch (error) {
-    alert(error.response?.data?.message || "Registration failed");
-  }
-};
+  };
 
   const inputStyle = {
     width: "100%",

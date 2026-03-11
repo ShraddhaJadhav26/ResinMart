@@ -1,6 +1,3 @@
-// Final Port Fix Test.
-
-
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, subject, text) => {
@@ -8,14 +5,17 @@ const sendEmail = async (email, subject, text) => {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
-      secure: false, // Required for port 587
+      secure: false, // Port 587 requires secure: false
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      // ADD THESE TWO SETTINGS:
+      connectionTimeout: 10000, // Wait 10 seconds before giving up
+      greetingTimeout: 10000,
       tls: {
-        // This is the "magic" line that fixes the Render connection issue
-        rejectUnauthorized: false 
+        rejectUnauthorized: false,
+        minVersion: "TLSv1.2" // Forces a modern, stable security version
       }
     });
 

@@ -3,12 +3,17 @@ const nodemailer = require("nodemailer");
 const sendEmail = async (email, subject, text) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // Required for port 587
       auth: {
-        // These now point to your .env / Render Environment variables
-        user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS, 
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        // This is the "magic" line that fixes the Render connection issue
+        rejectUnauthorized: false 
+      }
     });
 
     await transporter.sendMail({

@@ -1,35 +1,21 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require('resend');
+
+// This uses the key you just added to Render
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (email, subject, text) => {
   try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false, // Port 587 requires secure: false
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      // ADD THESE TWO SETTINGS:
-      connectionTimeout: 10000, // Wait 10 seconds before giving up
-      greetingTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: "TLSv1.2" // Forces a modern, stable security version
-      }
-    });
-
-    await transporter.sendMail({
-      from: `"ResinMart" <${process.env.EMAIL_USER}>`,
+    const data = await resend.emails.send({
+      // For now, you MUST use this "onboarding" email
+      from: 'ResinMart <onboarding@resend.dev>', 
       to: email,
       subject: subject,
-      html: text, 
+      html: text, // This sends the clickable link
     });
 
-    console.log("Email sent successfully");
+    console.log("Email sent successfully via Resend!", data);
   } catch (error) {
-    console.log("Email not sent!");
-    console.log(error);
+    console.error("Resend Error:", error);
     return error;
   }
 };

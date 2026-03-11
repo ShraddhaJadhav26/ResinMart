@@ -5,16 +5,17 @@ const sendEmail = async (email, subject, text) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "shraddha26122005@gmail.com", // Replace this
-        pass: "gxbszcshkssudesd"     // Replace this with 16-char code
+        // These now point to your .env / Render Environment variables
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS, 
       },
     });
 
     await transporter.sendMail({
-      from: '"ResinMart" <YOUR_GMAIL@gmail.com>',
+      from: `"ResinMart" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
-      html: text, // We will send HTML for a nice link
+      html: text, 
     });
 
     console.log("Email sent successfully");

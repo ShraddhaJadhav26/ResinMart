@@ -103,7 +103,7 @@ navigate("/dashboard");
             <option value="Keychain">Keychain</option>
             <option value="Frame">Frame</option>
             <option value="Jewelry">Jewelry</option>
-            <option value="Other">Other</option>
+            <option value="other">Other</option>
           </select>
 
           <input

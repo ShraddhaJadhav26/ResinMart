@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-
+const loadScript = (src) => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 function Cart() {
   const [cart, setCart] = useState(null);
   const navigate = useNavigate();
@@ -44,57 +52,75 @@ function Cart() {
   const totalPrice = validProducts.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
 
   const placeOrder = async () => {
-    if (validProducts.length === 0) {
-      toast.error("Your cart is empty!");
-      return;
-    }
-
-    const phoneNumber = "918208297551"; 
-    const itemsList = validProducts
-      .map((item, index) => `${index + 1}. ${item.product.title} (Qty: ${item.quantity}) - ₹${item.product.price * item.quantity}`)
-      .join("\n");
-
-    const message = `✨ *NEW BULK ORDER* ✨\n\n*Items:*\n${itemsList}\n\n*Total:* ₹${totalPrice}\n\nHi! I want to order these items!`;
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          items: validProducts.map(item => ({
-            product: item.product._id,
-            title: item.product.title,
-            price: item.product.price,
-            quantity: item.quantity
-          })),
-          totalAmount: totalPrice,
-          phone: "Guest/User",
-          address: "Bulk Order - Check WhatsApp"
-        })
-      });
-      if (response.ok) console.log("Cart order saved.");
-    } catch (err) {
-      console.error("DB Save failed:", err);
-    }
-
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    toast.success("Redirecting to WhatsApp!");
-    window.open(whatsappUrl, "_blank");
-  };
-
-  if (!cart || validProducts.length === 0) {
-    return (
-      <div style={{ padding: "100px", textAlign: "center" }}>
-        <h2>Your cart is empty</h2>
-        <button onClick={() => navigate("/dashboard")} style={styles.shopBtn}>Go Shopping</button>
-      </div>
-    );
+  if (validProducts.length === 0) {
+    toast.error("Your cart is empty!");
+    return;
   }
 
+  // 1. Load Razorpay Script
+  const isLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+  if (!isLoaded) {
+    toast.error("Razorpay SDK failed to load.");
+    return;
+  }
+
+  // 2. Razorpay Options
+  const options = {
+    key: "rzp_test_SfnBoABLFevE3K", // 👈 Replace with your real Test Key
+    amount: totalPrice * 100, // Amount in paise
+    currency: "INR",
+    name: "ResinMart",
+    description: "Bulk Order Payment",
+    handler: async function (response) {
+      toast.success("Payment Successful!");
+
+      // 3. Your existing Logic (Database + WhatsApp)
+      const phoneNumber = "918208297551"; 
+      const itemsList = validProducts
+        .map((item, index) => `${index + 1}. ${item.product.title} (Qty: ${item.quantity})`)
+        .join("\n");
+
+      const message = `✨ *PAID BULK ORDER* ✨\n\n*Items:*\n${itemsList}\n\n*Total:* ₹${totalPrice}\n*Payment ID:* ${response.razorpay_payment_id}\n\nHi! I've paid for my cart items!`;
+
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            items: validProducts.map(item => ({
+              product: item.product._id,
+              title: item.product.title,
+              price: item.product.price,
+              quantity: item.quantity
+            })),
+            totalAmount: totalPrice,
+            paymentId: response.razorpay_payment_id // Storing payment ID is good practice
+            
+          })
+        });
+      } catch (err) {
+        console.error("DB Save failed:", err);
+      }
+
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+    },
+    prefill: {
+      name: "Customer",
+      email: "test@example.com"
+    },
+    theme: {
+      color: "#6c5ce7",
+    },
+  };
+
+  const paymentObject = new window.Razorpay(options);
+  paymentObject.open();
+};
   return (
     <div style={{ padding: "40px", maxWidth: "900px", margin: "0 auto", textAlign: "left" }}>
       <h2 style={{ borderBottom: "2px solid #eee", paddingBottom: "20px" }}>Shopping Cart</h2>

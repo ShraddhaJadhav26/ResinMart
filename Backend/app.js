@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const path = require("path");
+const Razorpay = require("razorpay");
 
 const app = express();
 
@@ -46,6 +47,11 @@ main()
 app.get("/", (req, res) => {
   res.send("ResinMart API is running...");
 });
+
+
+
+
+
 
 // 🔥 PORT: Using .env variable
 const PORT = process.env.PORT || 8080;

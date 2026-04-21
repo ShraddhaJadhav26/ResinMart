@@ -2,7 +2,15 @@ import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import toast from "react-hot-toast";
-
+const loadScript = (src) => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -55,42 +63,65 @@ function ProductDetails() {
   };
 
   const handleOrderNow = async () => {
-    const phoneNumber = "918208297551"; 
-    const message = `✨ *NEW ORDER REQUEST* ✨\n\n*Product:* ${product.title}\n*Price:* ₹${product.price}\n*Link:* ${window.location.href}\n\nHi! I want to confirm my order for this piece.`;
+  // 1. Load Razorpay Script
+  const isLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+  if (!isLoaded) {
+    toast.error("Razorpay SDK failed to load.");
+    return;
+  }
 
-    try {
-      const token = localStorage.getItem("token");
-      // Use /orders because your backend is router.post("/")
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          items: [{
-            product: product._id,
-            title: product.title,
-            price: product.price,
-            quantity: 1
-          }],
-          totalAmount: product.price,
-          phone: "Guest/User",
-          address: "Check WhatsApp for details"
-        })
-      });
+  // 2. Razorpay Window Options
+  const options = {
+    key: "rzp_test_SfnBoABLFevE3K", // 👈 Use your actual Test Key
+    amount: product.price * 100, 
+    currency: "INR",
+    name: "ResinMart",
+    description: `Order for ${product.title}`,
+    handler: async function (response) {
+      toast.success("Payment Successful!");
 
-      if (response.ok) {
-        console.log("Order recorded in database.");
+      // 3. Save to Database & Redirect to WhatsApp
+      const phoneNumber = "918208297551"; 
+      const message = `✨ *PAID ORDER* ✨\n\n*Product:* ${product.title}\n*Price:* ₹${product.price}\n*Payment ID:* ${response.razorpay_payment_id}\n\nHi! I've completed the payment for this piece.`;
+
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            items: [{
+              product: product._id,
+              title: product.title,
+              price: product.price,
+              quantity: 1
+            }],
+            totalAmount: product.price,
+            paymentId: response.razorpay_payment_id
+          })
+        });
+      } catch (err) {
+        console.error("DB Save failed:", err);
       }
-    } catch (err) {
-      console.error("DB Save failed, but proceeding to WhatsApp:", err);
-    }
 
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-    toast.success("Redirecting to WhatsApp!");
-    window.open(whatsappUrl, "_blank");
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+    },
+    prefill: {
+      name: "User",
+      email: "user@example.com"
+    },
+    theme: {
+      color: "#6c5ce7",
+    },
   };
+
+  const paymentObject = new window.Razorpay(options);
+  paymentObject.open();
+};
 
   const handleWhatsAppCustomization = () => {
     const phoneNumber = "918208297551"; 
